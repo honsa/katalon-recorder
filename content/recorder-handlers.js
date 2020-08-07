@@ -268,6 +268,21 @@ Recorder.addEventHandler('dragAndDrop', 'mousedown', function(event) {
 }, true);
 // END
 
+/**
+ * Track move events of selected element
+ */
+Recorder.addEventHandler('dragAndDrop', 'mousemove', function (event) {
+    if (this.selectMousedown) {
+        if (this.mousemoveQ) {
+            if (this.mousemoveQ.length >= 3)
+                this.mousemoveQ.shift();
+            this.mousemoveQ.push(event);
+        } else {
+            this.mousemoveQ = [event];
+        }
+    }
+}, true);
+
 // © Shuo-Heng Shih, SideeX Team
 Recorder.addEventHandler('dragAndDrop', 'mouseup', function(event) {
     clearTimeout(this.selectMouseup);
@@ -294,15 +309,23 @@ Recorder.addEventHandler('dragAndDrop', 'mouseup', function(event) {
             if (!!this.mouseoverQ.length && this.mouseoverQ[1].relatedTarget == this.mouseoverQ[0].target && this.mouseoverQ[0].target == event.target) {
                 targetRelateX = event.pageX - this.mouseoverQ[1].target.getBoundingClientRect().left - window.scrollX;
                 targetRelateY = event.pageY - this.mouseoverQ[1].target.getBoundingClientRect().top - window.scrollY;
-                // this.record("mouseDownAt", this.locatorBuilders.buildAll(this.selectMousedown.target), sourceRelateX + ',' + sourceRelateY);
-                // this.record("mouseMoveAt", this.locatorBuilders.buildAll(this.mouseoverQ[1].target), targetRelateX + ',' + targetRelateY);
-                // this.record("mouseUpAt", this.locatorBuilders.buildAll(this.mouseoverQ[1].target), targetRelateX + ',' + targetRelateY);
+                this.record("mouseDownAt", this.locatorBuilders.buildAll(this.selectMousedown.target), sourceRelateX + ',' + sourceRelateY);
+                this.record("mouseMoveAt", this.locatorBuilders.buildAll(this.mouseoverQ[1].target), targetRelateX + ',' + targetRelateY);
+                this.record("mouseUpAt", this.locatorBuilders.buildAll(this.mouseoverQ[1].target), targetRelateX + ',' + targetRelateY);
             } else {
                 targetRelateX = event.pageX - event.target.getBoundingClientRect().left - window.scrollX;
                 targetRelateY = event.pageY - event.target.getBoundingClientRect().top - window.scrollY;
-                // this.record("mouseDownAt", this.locatorBuilders.buildAll(event.target), targetRelateX + ',' + targetRelateY);
-                // this.record("mouseMoveAt", this.locatorBuilders.buildAll(event.target), targetRelateX + ',' + targetRelateY);
-                // this.record("mouseUpAt", this.locatorBuilders.buildAll(event.target), targetRelateX + ',' + targetRelateY);
+                this.record("mouseDownAt", this.locatorBuilders.buildAll(this.selectMousedown.target), sourceRelateX + ',' + sourceRelateY);
+
+                for (var moveEvent of this.mousemoveQ) {
+
+                    var moveTargetRelateX = moveEvent.pageX - moveEvent.target.getBoundingClientRect().left - window.scrollX;
+                    var moveTargetRelateY = moveEvent.pageY - moveEvent.target.getBoundingClientRect().top - window.scrollY - 10;
+                }
+
+                this.record("mouseMoveAt", this.locatorBuilders.buildAll(moveEvent.target), moveTargetRelateX + ',' + moveTargetRelateY);
+
+                this.record("mouseUpAt", this.locatorBuilders.buildAll(event.target), targetRelateX+ ',' + targetRelateY);
             }
         }
     } else {
@@ -313,21 +336,22 @@ Recorder.addEventHandler('dragAndDrop', 'mouseup', function(event) {
             var y = event.clientY - this.mousedown.clientY;
 
             if (this.mousedown && this.mousedown.target !== event.target && !(x + y)) {
-                // this.record("mouseDown", this.locatorBuilders.buildAll(this.mousedown.target), '');
-                // this.record("mouseUp", this.locatorBuilders.buildAll(event.target), '');
+                this.record("mouseDown", this.locatorBuilders.buildAll(this.mousedown.target), '');
+                this.record("mouseUp", this.locatorBuilders.buildAll(event.target), '');
             } else if (this.mousedown && this.mousedown.target === event.target) {
                 var self = this;
                 var target = this.locatorBuilders.buildAll(this.mousedown.target);
-                // setTimeout(function() {
-                //     if (!self.clickLocator)
-                //         this.record("click", target, '');
-                // }.bind(this), 100);
+                setTimeout(function () {
+                    if (!self.clickLocator)
+                        this.record("click", target, '');
+                }.bind(this), 100);
             }
         }
     }
     delete this.mousedown;
     delete this.selectMousedown;
     delete this.mouseoverQ;
+    delete this.mousemoveQ;
 
 }, true);
 // END
